@@ -1,26 +1,102 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fffdf8;
+  --foreground: #2b2118;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-ink: #2b2118;
+  --color-muted: rgb(43 33 24 / 0.62);
+  --color-line: rgb(43 33 24 / 0.1);
+  --color-surface: #fffdf8;
+  --color-surface-elevated: #ffffff;
+  --color-brand-burgundy: #f5b301;
+  --color-brand-burgundy-deep: #d99a00;
+  --color-brand-green: #5fb85b;
+  --color-brand-cream: #fbf7ee;
+  --color-brand-blush: #fff4d6;
+  --color-accent-warm: #f2994a;
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--background);
+}
+
+@utility label-mono {
+  @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-green;
+}
+
+@utility input-field {
+  @apply w-full rounded-[10px] border-[1.5px] border-line bg-surface-elevated px-3 py-2.5 text-base text-ink outline-none transition sm:text-sm;
+  @apply placeholder:text-ink/35 focus:border-brand-burgundy focus:outline-2 focus:outline-offset-1 focus:outline-brand-burgundy;
+}
+
+@utility card-panel {
+  @apply rounded-[18px] border border-line bg-surface-elevated p-6;
+}
+
+@utility card-hover {
+  @apply transition duration-200 ease-out hover:-translate-y-1 hover:shadow-[0_16px_32px_rgb(43_33_24/0.12)];
+}
+
+@utility btn-primary {
+  @apply inline-flex min-h-11 items-center justify-center rounded-full bg-brand-burgundy px-6 py-3 text-sm font-bold text-ink shadow-sm transition;
+  @apply hover:-translate-y-0.5 hover:bg-brand-burgundy-deep hover:shadow-[0_10px_22px_rgb(245_179_1/0.35)];
+  @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-burgundy;
+  @apply touch-manipulation disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none;
+}
+
+@utility btn-outline {
+  @apply inline-flex min-h-11 items-center justify-center rounded-full border-[1.5px] border-line bg-surface-elevated px-5 py-2.5 text-sm font-semibold text-ink transition;
+  @apply hover:border-brand-burgundy hover:bg-brand-cream;
+  @apply touch-manipulation;
+}
+
+@utility btn-outline-active {
+  @apply border-brand-burgundy bg-brand-burgundy text-ink;
+}
+
+@utility extra-chip {
+  @apply flex cursor-pointer items-center gap-1.5 rounded-full border-[1.5px] border-line bg-surface-elevated px-2.5 py-1.5 text-xs font-semibold text-ink transition;
+  @apply hover:border-brand-burgundy/40;
+}
+
+@utility extra-chip-active {
+  @apply border-transparent text-white;
+}
+
+@utility ticket-edge {
+  @apply border-t-2 border-dashed border-line;
+}
+
+@utility link-back {
+  @apply inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-muted transition hover:text-ink;
+  @apply touch-manipulation;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-hover,
+  .btn-primary {
+    transition: none;
+  }
 }
