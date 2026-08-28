@@ -25,6 +25,16 @@ const STATUSES: OrderStatus[] = [
   "cancelled",
 ];
 
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: "created_at", label: "Placed" },
+  { key: "customer", label: "Customer" },
+  { key: "customer_phone", label: "Phone" },
+  { key: "preferred_date", label: "Pickup" },
+  { key: "pickup_slot_summary", label: "Location" },
+  { key: "total_cents", label: "Total" },
+  { key: "status", label: "Status" },
+];
+
 function customerLabel(order: AdminOrder): string {
   const f = order.customer_first_name?.trim();
   const l = order.customer_last_name?.trim();
@@ -120,6 +130,107 @@ function SortHeader({
   );
 }
 
+function OrderDetails({
+  order,
+  events,
+}: {
+  order: AdminOrder;
+  events: OrderStatusEventRow[];
+}) {
+  return (
+    <div className="space-y-4">
+      {order.notes && (
+        <p className="text-sm text-muted">
+          <span className="font-medium text-ink">Notes:</span> {order.notes}
+        </p>
+      )}
+      {order.order_items && order.order_items.length > 0 && (
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+            Line items
+          </p>
+          <ul className="divide-y divide-line rounded-xl border border-line bg-surface-elevated text-muted">
+            {order.order_items.map((item) => (
+              <li
+                key={item.id}
+                className="flex flex-wrap justify-between gap-2 px-3 py-2.5 text-sm"
+              >
+                <span>
+                  {item.quantity}× {item.selection_label}
+                </span>
+                <span className="font-medium text-ink">
+                  {formatMoney(item.line_total_cents)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {events.length > 0 && (
+        <details className="rounded-xl border border-line bg-surface-elevated px-3 py-2">
+          <summary className="cursor-pointer text-sm font-medium text-ink">
+            Status history ({events.length})
+          </summary>
+          <ol className="mt-2 space-y-1.5 border-t border-line pt-2 text-xs text-muted">
+            {events.map((ev) => (
+              <li
+                key={ev.id}
+                className="flex flex-wrap gap-x-2 border-l-2 border-accent-warm/50 pl-2"
+              >
+                <time dateTime={ev.created_at}>{formatDate(ev.created_at)}</time>
+                <span>
+                  {ev.previous_status
+                    ? `${ORDER_STATUS_LABELS[ev.previous_status] ?? ev.previous_status} → `
+                    : ""}
+                  <strong>
+                    {ORDER_STATUS_LABELS[ev.new_status] ?? ev.new_status}
+                  </strong>
+                </span>
+                {ev.changed_by_email && (
+                  <span className="text-muted/80">by {ev.changed_by_email}</span>
+                )}
+              </li>
+            ))}
+          </ol>
+        </details>
+      )}
+    </div>
+  );
+}
+
+function StatusSelect({
+  order,
+  pending,
+  onStatusChange,
+}: {
+  order: AdminOrder;
+  pending: boolean;
+  onStatusChange: (orderId: string, status: OrderStatus) => void;
+}) {
+  return (
+    <>
+      <label className="sr-only" htmlFor={`status-${order.id}`}>
+        Change status for order {order.id.slice(0, 8)}
+      </label>
+      <select
+        id={`status-${order.id}`}
+        disabled={pending}
+        className="input-field py-2 text-sm"
+        value={order.status}
+        onChange={(e) =>
+          onStatusChange(order.id, e.target.value as OrderStatus)
+        }
+      >
+        {STATUSES.map((s) => (
+          <option key={s} value={s}>
+            {ORDER_STATUS_LABELS[s] ?? s}
+          </option>
+        ))}
+      </select>
+    </>
+  );
+}
+
 export function AdminOrders({
   initialOrders,
   statusEvents,
@@ -170,9 +281,17 @@ export function AdminOrders({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">Orders</h1>
+        <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
+          Orders
+        </h1>
         <p className="mt-2 text-sm text-muted">
-          Click column headers to sort. Expand a row for items and status history.
+          <span className="hidden md:inline">
+            Click column headers to sort. Expand a row for items and status
+            history.
+          </span>
+          <span className="md:hidden">
+            Tap an order to see details. Use sort controls below.
+          </span>
         </p>
       </div>
 
@@ -187,220 +306,264 @@ export function AdminOrders({
           No orders yet. Customer submissions will appear here.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-line bg-surface-elevated shadow-sm">
-          <table className="w-full min-w-[860px] border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-line bg-brand-cream/40 text-left">
-                <th scope="col" className="w-10 px-2 py-3" aria-label="Expand" />
-                <SortHeader
-                  label="Placed"
-                  column="created_at"
-                  sortKey={sortKey}
-                  sortAsc={sortAsc}
-                  onSort={onSort}
-                />
-                <SortHeader
-                  label="Customer"
-                  column="customer"
-                  sortKey={sortKey}
-                  sortAsc={sortAsc}
-                  onSort={onSort}
-                />
-                <SortHeader
-                  label="Phone"
-                  column="customer_phone"
-                  sortKey={sortKey}
-                  sortAsc={sortAsc}
-                  onSort={onSort}
-                  className="whitespace-nowrap"
-                />
-                <SortHeader
-                  label="Pickup"
-                  column="preferred_date"
-                  sortKey={sortKey}
-                  sortAsc={sortAsc}
-                  onSort={onSort}
-                  className="whitespace-nowrap"
-                />
-                <SortHeader
-                  label="Location"
-                  column="pickup_slot_summary"
-                  sortKey={sortKey}
-                  sortAsc={sortAsc}
-                  onSort={onSort}
-                />
-                <SortHeader
-                  label="Total"
-                  column="total_cents"
-                  sortKey={sortKey}
-                  sortAsc={sortAsc}
-                  onSort={onSort}
-                  className="whitespace-nowrap text-right"
-                />
-                <SortHeader
-                  label="Status"
-                  column="status"
-                  sortKey={sortKey}
-                  sortAsc={sortAsc}
-                  onSort={onSort}
-                  className="whitespace-nowrap"
-                />
-              </tr>
-            </thead>
-            <tbody>
-              {sortedOrders.map((order) => {
-                const events = statusEvents[order.id] ?? [];
-                const open = expandedId === order.id;
-                return (
-                  <Fragment key={order.id}>
-                    <tr
-                      className={`border-b border-line border-l-4 hover:bg-brand-cream/20 ${orderStatusRowBorderClass(order.status)}`}
+        <>
+          {/* Mobile sort controls */}
+          <div className="flex flex-wrap items-end gap-3 md:hidden">
+            <label className="min-w-35 flex-1">
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted">
+                Sort by
+              </span>
+              <select
+                className="input-field mt-1"
+                value={sortKey}
+                onChange={(e) => onSort(e.target.value as SortKey)}
+              >
+                {SORT_OPTIONS.map((opt) => (
+                  <option key={opt.key} value={opt.key}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              onClick={() => setSortAsc((v) => !v)}
+              className="btn-outline min-h-11 shrink-0 px-4 text-sm"
+              aria-label={sortAsc ? "Sort ascending" : "Sort descending"}
+            >
+              {sortAsc ? "↑ Asc" : "↓ Desc"}
+            </button>
+          </div>
+
+          {/* Mobile card list */}
+          <ul className="space-y-3 md:hidden" role="list">
+            {sortedOrders.map((order) => {
+              const events = statusEvents[order.id] ?? [];
+              const open = expandedId === order.id;
+              return (
+                <li key={order.id}>
+                  <article
+                    className={`overflow-hidden rounded-2xl border border-line border-l-4 bg-surface-elevated shadow-sm ${orderStatusRowBorderClass(order.status)}`}
+                  >
+                    <button
+                      type="button"
+                      className="w-full p-4 text-left"
+                      aria-expanded={open}
+                      onClick={() =>
+                        setExpandedId((id) =>
+                          id === order.id ? null : order.id
+                        )
+                      }
                     >
-                      <td className="px-2 py-3 align-top">
-                        <button
-                          type="button"
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-line/60 hover:text-ink"
-                          aria-expanded={open}
-                          aria-controls={`order-detail-${order.id}`}
-                          onClick={() =>
-                            setExpandedId((id) =>
-                              id === order.id ? null : order.id
-                            )
-                          }
-                        >
-                          <span className="text-lg leading-none" aria-hidden>
-                            {open ? "▼" : "▶"}
-                          </span>
-                        </button>
-                      </td>
-                      <td className="px-3 py-3 align-top text-muted whitespace-nowrap">
-                        {formatDate(order.created_at)}
-                      </td>
-                      <td className="px-3 py-3 align-top">
-                        <span className="font-medium text-ink">
-                          {customerLabel(order)}
-                        </span>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-ink">
+                            {customerLabel(order)}
+                          </p>
+                          <p className="mt-0.5 text-xs text-muted">
+                            {formatDate(order.created_at)}
+                          </p>
+                        </div>
+                        <p className="shrink-0 text-base font-bold text-brand-burgundy tabular-nums">
+                          {formatMoney(order.total_cents)}
+                        </p>
+                      </div>
+                      <div className="mt-3">
+                        <OrderStatusBadge status={order.status} />
+                      </div>
+                    </button>
+
+                    <div className="space-y-3 border-t border-line px-4 pb-4">
+                      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+                        <dt className="text-muted">Phone</dt>
+                        <dd className="text-ink">{order.customer_phone}</dd>
                         {order.customer_email && (
-                          <span className="mt-0.5 block text-xs text-muted">
-                            {order.customer_email}
-                          </span>
+                          <>
+                            <dt className="text-muted">Email</dt>
+                            <dd className="break-all text-ink">
+                              {order.customer_email}
+                            </dd>
+                          </>
                         )}
-                      </td>
-                      <td className="px-3 py-3 align-top text-muted whitespace-nowrap">
-                        {order.customer_phone}
-                      </td>
-                      <td className="px-3 py-3 align-top whitespace-nowrap">
-                        {order.preferred_date}
-                      </td>
-                      <td className="max-w-[200px] px-3 py-3 align-top text-muted">
-                        {order.pickup_slot_summary ?? "—"}
-                      </td>
-                      <td className="px-3 py-3 align-top text-right font-semibold text-brand-burgundy whitespace-nowrap">
-                        {formatMoney(order.total_cents)}
-                      </td>
-                      <td className="px-3 py-3 align-top">
-                        <div className="flex max-w-52 flex-col gap-2">
-                          <OrderStatusBadge status={order.status} />
-                          <label className="sr-only" htmlFor={`status-${order.id}`}>
-                            Change status for order {order.id.slice(0, 8)}
-                          </label>
-                          <select
-                            id={`status-${order.id}`}
-                            disabled={pending}
-                            className="input-field py-1.5 text-xs"
-                            value={order.status}
-                            onChange={(e) =>
-                              onStatusChange(
-                                order.id,
-                                e.target.value as OrderStatus
+                        <dt className="text-muted">Pickup</dt>
+                        <dd className="text-ink">
+                          {order.preferred_date ?? "—"}
+                        </dd>
+                        <dt className="text-muted">Location</dt>
+                        <dd className="text-ink">
+                          {order.pickup_slot_summary ?? "—"}
+                        </dd>
+                      </dl>
+
+                      <StatusSelect
+                        order={order}
+                        pending={pending}
+                        onStatusChange={onStatusChange}
+                      />
+
+                      <button
+                        type="button"
+                        className="w-full rounded-xl border border-line bg-brand-cream/50 py-2.5 text-sm font-medium text-ink"
+                        aria-expanded={open}
+                        onClick={() =>
+                          setExpandedId((id) =>
+                            id === order.id ? null : order.id
+                          )
+                        }
+                      >
+                        {open ? "Hide details" : "View items & history"}
+                      </button>
+
+                      {open && (
+                        <OrderDetails order={order} events={events} />
+                      )}
+                    </div>
+                  </article>
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* Desktop table */}
+          <div className="hidden overflow-x-auto rounded-2xl border border-line bg-surface-elevated shadow-sm md:block">
+            <table className="w-full min-w-215 border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-line bg-brand-cream/40 text-left">
+                  <th scope="col" className="w-10 px-2 py-3" aria-label="Expand" />
+                  <SortHeader
+                    label="Placed"
+                    column="created_at"
+                    sortKey={sortKey}
+                    sortAsc={sortAsc}
+                    onSort={onSort}
+                  />
+                  <SortHeader
+                    label="Customer"
+                    column="customer"
+                    sortKey={sortKey}
+                    sortAsc={sortAsc}
+                    onSort={onSort}
+                  />
+                  <SortHeader
+                    label="Phone"
+                    column="customer_phone"
+                    sortKey={sortKey}
+                    sortAsc={sortAsc}
+                    onSort={onSort}
+                    className="whitespace-nowrap"
+                  />
+                  <SortHeader
+                    label="Pickup"
+                    column="preferred_date"
+                    sortKey={sortKey}
+                    sortAsc={sortAsc}
+                    onSort={onSort}
+                    className="whitespace-nowrap"
+                  />
+                  <SortHeader
+                    label="Location"
+                    column="pickup_slot_summary"
+                    sortKey={sortKey}
+                    sortAsc={sortAsc}
+                    onSort={onSort}
+                  />
+                  <SortHeader
+                    label="Total"
+                    column="total_cents"
+                    sortKey={sortKey}
+                    sortAsc={sortAsc}
+                    onSort={onSort}
+                    className="whitespace-nowrap text-right"
+                  />
+                  <SortHeader
+                    label="Status"
+                    column="status"
+                    sortKey={sortKey}
+                    sortAsc={sortAsc}
+                    onSort={onSort}
+                    className="whitespace-nowrap"
+                  />
+                </tr>
+              </thead>
+              <tbody>
+                {sortedOrders.map((order) => {
+                  const events = statusEvents[order.id] ?? [];
+                  const open = expandedId === order.id;
+                  return (
+                    <Fragment key={order.id}>
+                      <tr
+                        className={`border-b border-line border-l-4 hover:bg-brand-cream/20 ${orderStatusRowBorderClass(order.status)}`}
+                      >
+                        <td className="px-2 py-3 align-top">
+                          <button
+                            type="button"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-line/60 hover:text-ink"
+                            aria-expanded={open}
+                            aria-controls={`order-detail-${order.id}`}
+                            onClick={() =>
+                              setExpandedId((id) =>
+                                id === order.id ? null : order.id
                               )
                             }
                           >
-                            {STATUSES.map((s) => (
-                              <option key={s} value={s}>
-                                {ORDER_STATUS_LABELS[s] ?? s}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </td>
-                    </tr>
-                    {open && (
-                      <tr
-                        id={`order-detail-${order.id}`}
-                        className={`border-b border-line border-l-4 bg-surface/80 ${orderStatusRowBorderClass(order.status)}`}
-                      >
-                        <td colSpan={8} className="px-4 py-4 sm:px-6">
-                          {order.notes && (
-                            <p className="mb-4 text-sm text-muted">
-                              <span className="font-medium text-ink">Notes:</span>{" "}
-                              {order.notes}
-                            </p>
-                          )}
-                          {order.order_items && order.order_items.length > 0 && (
-                            <div className="mb-4">
-                              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
-                                Line items
-                              </p>
-                              <ul className="divide-y divide-line rounded-xl border border-line bg-surface-elevated text-muted">
-                                {order.order_items.map((item) => (
-                                  <li
-                                    key={item.id}
-                                    className="flex flex-wrap justify-between gap-2 px-3 py-2 text-sm"
-                                  >
-                                    <span>
-                                      {item.quantity}× {item.selection_label}
-                                    </span>
-                                    <span className="font-medium text-ink">
-                                      {formatMoney(item.line_total_cents)}
-                                    </span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          {events.length > 0 && (
-                            <details className="rounded-xl border border-line bg-surface-elevated px-3 py-2">
-                              <summary className="cursor-pointer text-sm font-medium text-ink">
-                                Status history ({events.length})
-                              </summary>
-                              <ol className="mt-2 space-y-1.5 border-t border-line pt-2 text-xs text-muted">
-                                {events.map((ev) => (
-                                  <li
-                                    key={ev.id}
-                                    className="flex flex-wrap gap-x-2 border-l-2 border-accent-warm/50 pl-2"
-                                  >
-                                    <time dateTime={ev.created_at}>
-                                      {formatDate(ev.created_at)}
-                                    </time>
-                                    <span>
-                                      {ev.previous_status
-                                        ? `${ORDER_STATUS_LABELS[ev.previous_status] ?? ev.previous_status} → `
-                                        : ""}
-                                      <strong>
-                                        {ORDER_STATUS_LABELS[ev.new_status] ??
-                                          ev.new_status}
-                                      </strong>
-                                    </span>
-                                    {ev.changed_by_email && (
-                                      <span className="text-muted/80">
-                                        by {ev.changed_by_email}
-                                      </span>
-                                    )}
-                                  </li>
-                                ))}
-                              </ol>
-                            </details>
+                            <span className="text-lg leading-none" aria-hidden>
+                              {open ? "▼" : "▶"}
+                            </span>
+                          </button>
+                        </td>
+                        <td className="px-3 py-3 align-top whitespace-nowrap text-muted">
+                          {formatDate(order.created_at)}
+                        </td>
+                        <td className="px-3 py-3 align-top">
+                          <span className="font-medium text-ink">
+                            {customerLabel(order)}
+                          </span>
+                          {order.customer_email && (
+                            <span className="mt-0.5 block text-xs text-muted">
+                              {order.customer_email}
+                            </span>
                           )}
                         </td>
+                        <td className="px-3 py-3 align-top whitespace-nowrap text-muted">
+                          {order.customer_phone}
+                        </td>
+                        <td className="px-3 py-3 align-top whitespace-nowrap">
+                          {order.preferred_date}
+                        </td>
+                        <td className="max-w-50 px-3 py-3 align-top text-muted">
+                          {order.pickup_slot_summary ?? "—"}
+                        </td>
+                        <td className="px-3 py-3 align-top text-right font-semibold whitespace-nowrap text-brand-burgundy">
+                          {formatMoney(order.total_cents)}
+                        </td>
+                        <td className="px-3 py-3 align-top">
+                          <div className="flex max-w-52 flex-col gap-2">
+                            <OrderStatusBadge status={order.status} />
+                            <StatusSelect
+                              order={order}
+                              pending={pending}
+                              onStatusChange={onStatusChange}
+                            />
+                          </div>
+                        </td>
                       </tr>
-                    )}
-                  </Fragment>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                      {open && (
+                        <tr
+                          id={`order-detail-${order.id}`}
+                          className={`border-b border-line border-l-4 bg-surface/80 ${orderStatusRowBorderClass(order.status)}`}
+                        >
+                          <td colSpan={8} className="px-4 py-4 sm:px-6">
+                            <OrderDetails order={order} events={events} />
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );

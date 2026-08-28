@@ -23,7 +23,9 @@ create table if not exists public.orders (
   customer_last_name text not null,
   customer_email text,
   customer_phone text not null,
-  preferred_date date not null,
+  fulfillment_method text not null default 'pickup'
+    check (fulfillment_method in ('pickup', 'delivery')),
+  preferred_date date,
   pickup_location_id text not null,
   pickup_slot_summary text not null,
   notes text,

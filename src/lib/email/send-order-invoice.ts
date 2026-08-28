@@ -20,7 +20,7 @@ export type InvoiceLine = {
 
 export function isInvoiceEmailConfigured(): boolean {
   const user = process.env.GMAIL_USER?.trim();
-  const pass = process.env.GMAIL_APP_PASSWORD?.trim();
+  const pass = process.env.GMAIL_APP_PASSWORD?.replace(/\s/g, "");
   return Boolean(user && pass);
 }
 
@@ -49,7 +49,7 @@ export async function sendOrderInvoiceEmail(params: {
   }
 
   const user = process.env.GMAIL_USER!.trim();
-  const pass = process.env.GMAIL_APP_PASSWORD!.trim();
+  const pass = process.env.GMAIL_APP_PASSWORD!.replace(/\s/g, "");
   const from = process.env.INVOICE_FROM_EMAIL?.trim() || user;
 
   const transporter = nodemailer.createTransport({
@@ -257,4 +257,6 @@ export async function sendOrderInvoiceEmail(params: {
     text: textLines.join("\n"),
     html,
   });
+
+  console.info(`[email] Invoice sent to ${params.to} for order #${shortId}`);
 }
