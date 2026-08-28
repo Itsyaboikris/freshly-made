@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { isAdminEmail } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { AdminShell } from "@/components/AdminShell";
 
@@ -13,7 +12,7 @@ export default async function AdminAuthenticatedLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || !isAdminEmail(user.email ?? undefined)) {
+  if (!user) {
     redirect("/admin");
   }
 

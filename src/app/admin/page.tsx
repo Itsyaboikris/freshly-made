@@ -1,9 +1,7 @@
 import { redirect } from "next/navigation";
-import { isAdminEmail } from "@/lib/auth";
 import { getSupabasePublishableKey } from "@/lib/supabase/publishable-key";
 import { createClient } from "@/lib/supabase/server";
 import { AdminLoginForm } from "@/components/AdminLoginForm";
-import { AdminAccessDenied } from "@/components/AdminAccessDenied";
 
 export default async function AdminPage() {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || !getSupabasePublishableKey()) {
@@ -31,14 +29,6 @@ export default async function AdminPage() {
     return (
       <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6">
         <AdminLoginForm />
-      </div>
-    );
-  }
-
-  if (!isAdminEmail(user.email ?? undefined)) {
-    return (
-      <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6">
-        <AdminAccessDenied />
       </div>
     );
   }

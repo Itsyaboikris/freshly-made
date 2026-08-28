@@ -34,13 +34,6 @@ export function AdminLoginForm() {
   return (
     <div className="card-panel mx-auto max-w-md">
       <h1 className="font-display text-2xl font-semibold text-ink">Admin sign in</h1>
-      <p className="mt-2 text-sm text-muted">
-        Use the Supabase account you listed in{" "}
-        <code className="rounded-md border border-line bg-brand-cream/60 px-1 text-xs text-ink">
-          ADMIN_EMAILS
-        </code>
-        .
-      </p>
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
         <label className="block text-sm font-medium text-ink">
           Email
