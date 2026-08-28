@@ -5,8 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CartDrawer } from "@/components/CartDrawer";
 import { CartNavLink } from "@/components/CartNavLink";
-import { TestEmailNavButton } from "@/components/TestEmailNavButton";
-
 export function SiteHeader() {
   const pathname = usePathname();
   const isAdmin = pathname?.startsWith("/admin") ?? false;
@@ -45,7 +43,6 @@ export function SiteHeader() {
             >
               Menu
             </Link>
-            <TestEmailNavButton />
             <CartNavLink />
           </nav>
         </div>
